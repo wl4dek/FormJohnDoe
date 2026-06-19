@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "language": "ts",
+  "entryFile": "main",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "builder": "tsc"
+  }
+}
