@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+
+# Build
+backend/dist/
+frontend/dist/
+
+# Ambiente e segredos
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Playwright (e2e)
+e2e/test-results/
+e2e/playwright-report/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cobertura de testes
+coverage/
