@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "pg": "^8.21.0"
+  }
+}
