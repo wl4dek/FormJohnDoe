@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: form_john_doe_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_e2e:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  backend:
+    build:
+      context: backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/form_john_doe_test
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:5173,http://frontend:8080
+    healthcheck:
+      test: [ "CMD", "node", "--eval", "fetch('http://localhost:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" ]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        VITE_API_URL: http://backend:3001
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  e2e:
+    build:
+      context: e2e
+    environment:
+      BASE_URL: http://frontend:8080
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/form_john_doe_test
+    depends_on:
+      frontend:
+        condition: service_started
+
+volumes:
+  pgdata_e2e:
