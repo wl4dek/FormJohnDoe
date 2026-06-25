@@ -3,6 +3,7 @@ import { RegisterUserInput, RegisterUserResponse } from '../dto';
 import { IUserRepository } from '@core/ports/IUserRepository.js';
 import { User } from '@core/entities/User.js';
 import { FullName, CPF, Email, Color } from '@core/value-objects';
+import { UserAlreadyExistsError } from '@core/shared/errors/UserAlreadyExistsError';
 
 export class RegisterUserUseCase {
   constructor(
@@ -20,15 +21,20 @@ export class RegisterUserUseCase {
       throw new DomainError('CPF já cadastrado');
     }
 
-    const user = User.create({
-      fullName,
-      cpf,
-      email,
-      color,
-      observation: userInput.observation?.trim() || null,
-    });
+    try {
+      const user = User.create({
+        fullName,
+        cpf,
+        email,
+        color,
+        observation: userInput.observation?.trim() || null,
+      });
 
-    await this.userRepository.save(user);
+      await this.userRepository.save(user);
+    } catch (error) {
+      throw new UserAlreadyExistsError(`O usuário ${userInput.fullName} já existe`);
+    }
+
 
     return {
       success: true,
