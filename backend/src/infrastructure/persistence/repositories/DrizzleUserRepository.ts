@@ -23,8 +23,7 @@ export class DrizzleUserRepository implements IUserRepository {
         createdAt: user.createdAt,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro ao salvar usuário';
-      throw new DomainError(message);
+      throw error;
     }
   }
 
