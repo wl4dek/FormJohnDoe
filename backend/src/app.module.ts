@@ -8,7 +8,7 @@ import { RegisterUserUseCase } from './core/application/use-cases/RegisterUser.j
 import { UserController } from './infrastructure/http/controllers/UserController.js';
 import { HealthController } from './infrastructure/http/controllers/HealthController.js';
 import { DomainErrorFilter } from './common/filters/domain-error.filter.js';
-import { BadRequestException, type ValidationError } from '@nestjs/common';
+import { BadRequestException, type ValidationError, type HttpException } from '@nestjs/common';
 
 @Module({
   imports: [DrizzleModule],
@@ -31,18 +31,17 @@ import { BadRequestException, type ValidationError } from '@nestjs/common';
           whitelist: true,
           forbidNonWhitelisted: true,
           transform: true,
-          exceptionFactory: (errors: ValidationError[]) => {
-            const formatted = errors.map(err => ({
-              field: err.property,
-              message: Object.values(err.constraints ?? {}).join(', '),
-            }));
-            return new BadRequestException({
-              success: false,
-              errors: formatted,
-            });
-          },
+          exceptionFactory: formatValidationErrors,
         }),
     },
   ],
 })
 export class AppModule { }
+
+export function formatValidationErrors(errors: ValidationError[]): HttpException {
+  const formatted = errors.map(err => ({
+    field: err.property,
+    message: Object.values(err.constraints ?? {}).join(', '),
+  }));
+  return new BadRequestException({ success: false, errors: formatted });
+}
