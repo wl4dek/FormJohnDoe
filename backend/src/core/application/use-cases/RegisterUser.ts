@@ -15,6 +15,11 @@ export class RegisterUserUseCase {
     const email = Email.criar(userInput.email);
     const color = Color.create(userInput.color);
 
+    const existing = await this.userRepository.findByCPF(cpf.value);
+    if (existing !== null) {
+      throw new DomainError('CPF já cadastrado');
+    }
+
     const user = User.create({
       fullName,
       cpf,
@@ -26,10 +31,8 @@ export class RegisterUserUseCase {
     try {
       await this.userRepository.save(user);
     } catch (error) {
-      if (error?.cause?.code === '23505') {
-        throw new DomainError('CPF já cadastrado');
-      }
-      throw new Error(error);
+      if (error instanceof DomainError) throw error;
+      throw new DomainError('Erro ao processar cadastro', 'general', { cause: error });
     }
 
     return {

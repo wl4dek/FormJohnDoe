@@ -23,7 +23,11 @@ export class DrizzleUserRepository implements IUserRepository {
         createdAt: user.createdAt,
       });
     } catch (error) {
-      throw error;
+      const dbError = error as { code?: string; cause?: { code?: string } };
+      if (dbError.code === '23505' || dbError.cause?.code === '23505') {
+        throw new DomainError('CPF já cadastrado');
+      }
+      throw new DomainError('Erro ao salvar usuário');
     }
   }
 
@@ -50,8 +54,7 @@ export class DrizzleUserRepository implements IUserRepository {
         row.id,
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro ao buscar usuário';
-      throw new DomainError(message);
+      throw new DomainError('Erro ao buscar usuário');
     }
   }
 }

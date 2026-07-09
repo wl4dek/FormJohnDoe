@@ -32,4 +32,10 @@ describe('DomainError', () => {
       expect((e as DomainError).message).toBe('teste');
     }
   });
+
+  it('preserva cause quando fornecido', () => {
+    const root = new Error('causa raiz');
+    const error = new DomainError('erro de domínio', 'general', { cause: root });
+    expect(error.cause).toBe(root);
+  });
 });
