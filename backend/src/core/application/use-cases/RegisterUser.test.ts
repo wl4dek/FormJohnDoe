@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { RegisterUserUseCase } from './RegisterUser.js';
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { User } from '../../entities/User.js';
 import type { IUserRepository } from '../../ports/IUserRepository.js';
 import type { RegisterUserInput } from '../dto/index.js';
 
@@ -130,5 +131,55 @@ describe('RegisterUserUseCase', () => {
 
     await expect(useCase.execute(input)).rejects.toThrow(DomainError);
     expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it('deve propagar DomainError quando save falha com DomainError', async () => {
+    const repo = makeRepoMock();
+    const domainError = new DomainError('Erro de negócio no repositório');
+    repo.save = vi.fn().mockRejectedValue(domainError);
+
+    const useCase = new RegisterUserUseCase(repo);
+
+    await expect(useCase.execute(makeValidInput())).rejects.toThrow(DomainError);
+    await expect(useCase.execute(makeValidInput())).rejects.toThrow('Erro de negócio no repositório');
+  });
+
+  it('deve envolver erro genérico do save em DomainError preservando cause', async () => {
+    const repo = makeRepoMock();
+    const originalError = new Error('conexão com banco perdida');
+    repo.save = vi.fn().mockRejectedValue(originalError);
+
+    const useCase = new RegisterUserUseCase(repo);
+
+    try {
+      await useCase.execute(makeValidInput());
+      expect.unreachable('Deveria ter lançado DomainError');
+    } catch (error) {
+      expect(error).toBeInstanceOf(DomainError);
+      expect((error as DomainError).message).toBe('Erro ao processar cadastro');
+      expect((error as DomainError).cause).toBe(originalError);
+    }
+  });
+
+  it('deve salvar usuário com fullName, cpf, email e color corretos', async () => {
+    const repo = makeRepoMock();
+
+    await new RegisterUserUseCase(repo).execute(makeValidInput());
+
+    const savedUser = repo.save.mock.calls[0][0] as User;
+    expect(savedUser.fullName.value).toBe('João Silva');
+    expect(savedUser.cpf.value).toBe('52998224725');
+    expect(savedUser.email.value).toBe('joao@email.com');
+    expect(savedUser.color.value).toBe('blue');
+  });
+
+  it('deve validar CPF antes de verificar duplicidade no banco', async () => {
+    const repo = makeRepoMock();
+    repo.findByCPF = vi.fn();
+
+    const input = { ...makeValidInput(), cpf: '00000000000' };
+
+    await expect(new RegisterUserUseCase(repo).execute(input)).rejects.toThrow(DomainError);
+    expect(repo.findByCPF).not.toHaveBeenCalled();
   });
 });
